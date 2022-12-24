@@ -542,7 +542,7 @@ function findShortestPathScreen() {
 function pathFoundScreen() {
     currentScreen = screens['Path Found'];
     currentGameType = ''
-    smile = `&#${Math.floor(Math.random() * (128567 - 128512) ) + 128512}` //random selection of smiles in html escape code
+    smile = `&#${Math.floor(Math.random() * (128527 - 128512) ) + 128512}` //random selection of smiles in html escape code
     document.querySelector('#dinamic-header').innerHTML = `<h2 id="path-found-title">${smile} ${currentScreen} ${smile}</h2>${playerPathFormatted()}`
     document.querySelector('#dinamic-content').innerHTML = DiagonalsCyclesFormatted();
     focused()
@@ -671,6 +671,7 @@ function tutorialScreen() {
 /*set inicial screen and event listener*/
 tutorialScreen()
 document.addEventListener('keydown', (event) => {
+    event.preventDefault();
     if (event.code == "Escape") {
         newGameScreen()
     } else {
