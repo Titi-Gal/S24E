@@ -6,22 +6,6 @@
         <title>S24E</title>
 
         <style>
-            #header {
-                position: -webkit-sticky;
-                position: sticky;
-                background-color: white;
-                top: 0;
-                padding: 1px;
-            }
-            .visits-0 {
-                color: darkblue;
-            }
-            .visits-1 {
-                color: gold;
-            }
-            .visits-2 {
-                color: darkred;
-            }
             body {
                 margin: 0;
                 padding: 0 1rem;
@@ -31,16 +15,12 @@
                 text-align: center;
                 caret-color: transparent;
             }
-            .entrie-point {
-                font-weight: bold;
-                text-decoration: overline;
-            }
-            .visits {
-                font-size: 0.7rem;
-                text-decoration: underline;
-            }
-            .bold {
-                font-weight: bold;
+            #header {
+                position: -webkit-sticky;
+                position: sticky;
+                background-color: white;
+                top: 0;
+                padding: 1px;
             }
             #esc-reminder {
                 position: absolute;
@@ -49,21 +29,42 @@
                 left: 0;
             }
             #found-style {
-                color: darkgreen;
-            }
-            .focused-indicator {
-                color: darkgreen;
-                font-weight: bold;
+                color: mediumseagreen;
             }
             #path-found-title {
-                color: darkgreen; 
+                color: mediumseagreen;
+                font-weight: bold; 
+            }
+            .visits-0 {
+                color: blue;
+            }
+            .visits-1 {
+                color: orange;
+            }
+            .visits-2 {
+                color: darkred;
+            }
+            .visits {
+                font-size: 0.7rem;
+                text-decoration: underline;
+            }
+            .entrie-point {
+                font-weight: bold;
+                text-decoration: overline;
+            }
+            .constrols-indicator {
+                color: mediumseagreen;
+                font-weight: bold;
+            }
+            .bold {
+                font-weight: bold;
             }
         </style>
 
     </head>
     <body>
         <div id="header">
-            <span id="esc-reminder"><span class="bold">Esc</span> for new game</span>   
+            <span id="esc-reminder"><span class="constrols-indicator">Esc</span> for new game</span>   
             <h1>S24E</h1>
             <div id="dinamic-header">    
             </div>
@@ -213,6 +214,16 @@ const screensInputsFunctions = {
             deleteFromPlayerPath()
             findShortestPathScreen()
         },
+        'KeyP': function() {
+            pathShortPrint = !pathShortPrint;
+            findShortestPathScreen()
+        }
+    },
+    'Path Found': {
+        'KeyP': function() {
+            pathShortPrint = !pathShortPrint;
+            pathFoundScreen()
+        }
     },
 }
 
@@ -241,6 +252,7 @@ let diagonalsCycles = [];
 let entriePoints = []
 let entriePointsSelectedIndex = 0
 let currentGameType = ''
+let pathShortPrint = true
 
 /*screnn state*/
 let currentScreen;
@@ -486,7 +498,7 @@ function newGameScreen() {
     let html = '<p>'
     newGameOptions.forEach((option, index) => {
         if (index == newGameSelectedIndex) {
-            html = `${html}${option} &#8645 &#8617<br>`
+            html = `${html}${option} <span class="constrols-indicator">&#8645 &#8617</span><br>`
         } else {
             html = `${html}${option}<br>`
         }
@@ -497,13 +509,13 @@ function newGameScreen() {
 function selectBiggestIslandScreen() {
     currentScreen = screens['Select Number Of Islands'];
     document.querySelector('#dinamic-header').innerHTML = `<h2>${currentScreen}</h2>`
-    document.querySelector('#dinamic-content').innerHTML = `<p>${numberOfVertices} &#8645 &#8617</p>`;
+    document.querySelector('#dinamic-content').innerHTML = `<p>${numberOfVertices} <span class="constrols-indicator">&#8645 &#8617</span></p>`;
 }
 
 function selectEndOfPathIslandScreen() {
     currentScreen = screens['Select Island To End Path'];
     document.querySelector('#dinamic-header').innerHTML = `<h2>${currentScreen}</h2>`
-    document.querySelector('#dinamic-content').innerHTML = `<p>${endVertice} &#8645 &#8617</p>`;
+    document.querySelector('#dinamic-content').innerHTML = `<p>${endVertice} <span class="constrols-indicator">&#8645 &#8617</span></p>`;
 }
 
 function selectBridgesToBuildScreen() {
@@ -517,14 +529,14 @@ function selectBridgesToBuildScreen() {
         firstSlice = repeatedDiagonalsSelectedIndex
         repeatedDiagonalsToScreen = repeatedDiagonals.slice(firstSlice, repeatedDiagonalsSelectedIndex + skip)
     }
-    html = `${html}<p>page ${Math.floor(repeatedDiagonalsSelectedIndex / skip) + 1} of ${Math.floor(repeatedDiagonals.length / skip) + 1} &#8646</p><p>`
+    html = `${html}<p>page ${Math.floor(repeatedDiagonalsSelectedIndex / skip) + 1} of ${Math.floor(repeatedDiagonals.length / skip) + 1} <span class="constrols-indicator">&#8646</span></p><p>`
     repeatedDiagonalsToScreen.forEach((diagonals, index) => {
         formattedDiagonals = '| '
         diagonals.forEach((diagonal) => {
             formattedDiagonals = `${formattedDiagonals}${diagonal[0]}__${diagonal[1]} | `
         })
         if (index + firstSlice == repeatedDiagonalsSelectedIndex) {
-            html = `${html}${formattedDiagonals} &#8645 &#8617<br>`
+            html = `${html}${formattedDiagonals} <span class="constrols-indicator">&#8645 &#8617</span><br>`
         } else {
             html = `${html}${formattedDiagonals}<br>`
         }
@@ -548,12 +560,19 @@ function pathFoundScreen() {
     focused()
 }
 
-function playerPathFormatted() {
-    let html = 'Path: '
-    for (let vertice of playerPath) {
-        html = `${html}${vertice}.`
+function playerPathFormatted(pathLengthToPrint=90) {
+
+    let html = '<span class="constrols-indicator">P</span>ath: ';
+    firstSlice = 0;
+    if (pathShortPrint && playerPath.length > pathLengthToPrint) {
+        html = html + '... '
+        firstSlice = playerPath.length - pathLengthToPrint
+
     }
-    html = `${html} &#10232`
+    for (let vertice of playerPath.slice(firstSlice)) {
+            html = `${html}${vertice}.`
+        }
+    html = `${html} <span class="constrols-indicator">&#10232</span>`
     if (currentGameType == gameTypes['Destroying Bridges Mode']) {
         html = `${html}<br>Path End: ${endVertice}`
     }
@@ -578,7 +597,6 @@ function DiagonalsCyclesFormatted() {
                 vertice = `_${vertice}_`
             }
             visits = diagonal['visits']
-            console.log(visits)
             if (visits == 0) {
                 cycle = cycle + vertice + `<span class="visits visits-0">${visits}</span>`
             }
@@ -598,7 +616,7 @@ function DiagonalsCyclesFormatted() {
             vertice = `_${vertice}_`
             cycle = cycle + vertice
         if (indexDiagonalsCycle == entriePoint['indexDiagonalCycle']) {
-            cycle = `<span class="focused-indicator">&#8645 &#8646</span><span id="focused">${cycle}</span><span class="focused-indicator">&#8645 &#8646</span>`
+            cycle = `<span class="constrols-indicator">&#8645 &#8646</span><span id="focused">${cycle}</span><span class="constrols-indicator">&#8645 &#8646</span>`
         }
         html = `${html}<p>${cycle}</p>`
     })
@@ -608,7 +626,6 @@ function DiagonalsCyclesFormatted() {
 function focused() {
     headerHeight = document.getElementById('header').getBoundingClientRect().height;
     focusedTop = document.getElementById('focused').getBoundingClientRect().top + window.pageYOffset;
-    console.log(focusedTop, headerHeight, (window.innerHeight + headerHeight) / 2)
     window.scroll({
 	top: focusedTop - ((window.innerHeight - headerHeight) / 2) - headerHeight,
 	behavior: "smooth"
@@ -675,11 +692,15 @@ document.addEventListener('keydown', (event) => {
     if (event.code == "Escape") {
         newGameScreen()
     } else {
-        screensInputsFunctions[currentScreen][event.code]()
+        try {
+            screensInputsFunctions[currentScreen][event.code]()
+        }
+        catch(err) {
+            console.log(err.message)
+        } 
     }
 }, false);
 
 </script>
-
     </body>
 </html>
