@@ -551,6 +551,7 @@ function findShortestPathScreen() {
 
 function pathFoundScreen() {
     currentScreen = screens['Path Found'];
+    pathShortPrint = false;
     currentGameType = ''
     smile = `&#${Math.floor(Math.random() * (128527 - 128512) ) + 128512}` //random selection of smiles in html escape code
     document.querySelector('#dinamic-header').innerHTML = `<h2 id="path-found-title">${smile} ${currentScreen} ${smile}</h2>${playerPathFormatted()}`
