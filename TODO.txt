@@ -1,0 +1,6 @@
+
+471 make try except for keys not specified
+make select bridged to build by select each remaining vertice when there are more then 20 vertices
+    make so there id not adjacent vertice in next choices
+    validate that buildingRepeatedDiagonals.length == (numberOfVertices - 2) / 2
+    

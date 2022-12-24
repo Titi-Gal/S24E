@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="initial-scale=1, width=device-width">
+        <title>S24E</title>
+
+        <style>
+            #header {
+                position: -webkit-sticky;
+                position: sticky;
+                background-color: white;
+                top: 0;
+                padding: 1px;
+            }
+            .visits-0 {
+                color: darkblue;
+            }
+            .visits-1 {
+                color: gold;
+            }
+            .visits-2 {
+                color: darkred;
+            }
+            body {
+                margin: 0;
+                padding: 0 1rem;
+                word-break: break-all;
+                font-family: sans-serif;
+                line-height: 1.5rem;
+                text-align: center;
+                caret-color: transparent;
+            }
+            .entrie-point {
+                font-weight: bold;
+                text-decoration: overline;
+            }
+            .visits {
+                font-size: 0.7rem;
+                text-decoration: underline;
+            }
+            .bold {
+                font-weight: bold;
+            }
+            #esc-reminder {
+                position: absolute;
+                margin: 1rem;
+                top: 0;
+                left: 0;
+            }
+            #found-style {
+                color: darkgreen;
+            }
+            .focused-indicator {
+                color: darkgreen;
+                font-weight: bold;
+            }
+            #path-found-title {
+                color: darkgreen; 
+            }
+        </style>
+
+    </head>
+    <body>
+        <div id="header">
+            <span id="esc-reminder"><span class="bold">Esc</span> for new game</span>   
+            <h1>S24E</h1>
+            <div id="dinamic-header">    
+            </div>
+        </div>
+        <div id="dinamic-content"></div>     
+
+<script>
+
+/*game types, screens and inputs globals*/
+const gameTypes = {
+    'Building Bridges Mode' : 'Building Bridges Mode',
+    'Destroying Bridges Mode' : 'Destroying Bridges Mode',
+}
+
+const screens = {
+    'New Game': 'New Game',
+    'Select Number Of Islands': 'Select Number Of Islands',
+    'Select Island To End Path': 'Select Island To End Path',
+    'Select Bridges To Build Twice (Alpha)': 'Select Bridges To Build Twice (Alpha)',
+    'Find Shortest Path': 'Find Shortest Path',
+    'Tutorial': 'Tutorial',
+    'Path Found': 'Path Found'
+}
+
+const screensInputsFunctions = {
+    'New Game': {
+        'ArrowUp': function() {
+            newGameSelectedIndex = minusIndex(newGameSelectedIndex, 0, newGameOptions.length - 1);
+            newGameScreen();
+        },
+        'ArrowDown': function() {
+            newGameSelectedIndex = plusIndex(newGameSelectedIndex, 0, newGameOptions.length - 1);
+            newGameScreen();
+        },
+        'Enter': function() {
+            chosenOption = newGameOptions[newGameSelectedIndex]
+            if (chosenOption == screens['Tutorial']) {
+                tutorialScreen()
+            } else {
+                let confirmNewGame = true
+                if (currentGameType && chosenOption !== currentGameType) {
+                    confirmNewGame = confirm(`Do you want to start a new game and lose you current ${currentGameType} game?`);
+                }
+
+                if (currentGameType && chosenOption == currentGameType) {
+                    findShortestPathScreen()
+                } else if (confirmNewGame) {
+                    playerPath = [0]
+                    playerHistory = []
+                    entriePoints = []
+                    diagonalsCycles = [];
+                    entriePointsSelectedIndex = 0
+                    numberOfVertices = 6
+                    currentGameType = ''
+                    selectBiggestIslandScreen();
+                }
+            }
+        },
+    },
+    'Select Number Of Islands': {
+        'ArrowUp':function() {
+            plusNumberOfVertices();
+            selectBiggestIslandScreen();
+        },
+        'ArrowDown': function() {
+            minusNumberOfVertices();
+            selectBiggestIslandScreen();
+        },
+        'Enter': function() {
+            findDiagonalsCycles()
+            findEntriePoints()
+            findShortestPathLenght()
+            if (chosenOption == gameTypes['Building Bridges Mode']) {
+                currentGameType = chosenOption
+                findShortestPathScreen()
+            }
+            else if (chosenOption == gameTypes['Destroying Bridges Mode']) {
+                endVertice = 1;
+                selectEndOfPathIslandScreen()
+            }
+        },
+    },
+    'Select Island To End Path': {
+        'ArrowUp': function() {
+            endVertice = plusIndex(endVertice, 1, numberOfVertices / 2)
+            selectEndOfPathIslandScreen()
+        },
+        'ArrowDown': function() {
+            endVertice = minusIndex(endVertice, 1, numberOfVertices / 2)
+            selectEndOfPathIslandScreen()
+        },
+        'Enter': function() {
+            repeatedDiagonalsSelectedIndex = 0
+            findRepeatedDiagonals()
+            selectBridgesToBuildScreen()
+        },
+
+    },
+    'Select Bridges To Build Twice (Alpha)': {
+        'ArrowUp': function() {
+            repeatedDiagonalsSelectedIndex = minusIndex(repeatedDiagonalsSelectedIndex, 0, repeatedDiagonals.length - 1)
+            selectBridgesToBuildScreen()
+        },
+        'ArrowDown': function() {
+            repeatedDiagonalsSelectedIndex = plusIndex(repeatedDiagonalsSelectedIndex, 0, repeatedDiagonals.length - 1)
+            selectBridgesToBuildScreen()
+        },
+        'ArrowLeft': function() {
+            repeatedDiagonalsSelectedIndex = minusSkipIndex(repeatedDiagonalsSelectedIndex, skip, 0)
+            selectBridgesToBuildScreen()
+        },
+        'ArrowRight': function() {
+            repeatedDiagonalsSelectedIndex = plusSkipIndex(repeatedDiagonalsSelectedIndex, skip, repeatedDiagonals.length - 1)
+            selectBridgesToBuildScreen()
+        },
+        'Enter': function() {
+            markDestructivePaths()
+            currentGameType = chosenOption
+            findShortestPathScreen()
+        },
+    },
+    'Find Shortest Path': {
+        'ArrowUp': function() {
+            entriePointsSelectedIndex = minusIndex(entriePointsSelectedIndex, 0, entriePoints.length - 1)
+            findShortestPathScreen()
+        },
+        'ArrowDown': function() {
+            entriePointsSelectedIndex = plusIndex(entriePointsSelectedIndex, 0, entriePoints.length - 1)
+            findShortestPathScreen()
+        },
+        'ArrowLeft': function() {
+            entriePoint = entriePoints[entriePointsSelectedIndex]
+            entriePoint['indexDiagonal'] = minusIndex(
+                entriePoint['indexDiagonal'], 0, 
+                diagonalsCycles[entriePoint['indexDiagonalCycle']]['diagonals'].length - 1
+            )
+
+            addToPlayerPath(entriePoint)
+            checkIfPathFound(findShortestPathScreen)
+        },
+        'ArrowRight': function() {
+            entriePoint = entriePoints[entriePointsSelectedIndex]
+            addToPlayerPath(entriePoint)
+            checkIfPathFound(findShortestPathScreen)
+        },
+        'Backspace': function() {
+            deleteFromPlayerPath()
+            findShortestPathScreen()
+        },
+    },
+}
+
+/*globals*/
+/*New Game globals*/
+const newGameOptions = [screens['Tutorial'], gameTypes['Building Bridges Mode'], gameTypes['Destroying Bridges Mode']]
+let newGameSelectedIndex = 0;
+let chosenOption;
+
+/*Select Number Of Islands entriePoints globals*/
+let numberOfVertices = 6;
+let shortestPathLenght;
+
+/*Select Island To End Path globals*/
+let endVertice = 1
+let repeatedDiagonals;
+
+/*Select Bridges To Build Twice (Alpha) globals*/
+let skip = 30
+let repeatedDiagonalsSelectedIndex = 0;
+
+/*Find Shortest Path globals*/
+let playerPath = [0]
+let playerHistory = []
+let diagonalsCycles = [];
+let entriePoints = []
+let entriePointsSelectedIndex = 0
+let currentGameType = ''
+
+/*screnn state*/
+let currentScreen;
+
+/*functions*/
+/*helpers to select options*/
+function minusIndex(index, lowerLimit, upperLimit) {
+    index -= 1
+    if (index < lowerLimit)
+        index = upperLimit
+    return index
+}
+
+function plusIndex(index, lowerLimit, upperLimit) {
+    index += 1
+    if (index > upperLimit)
+        index = lowerLimit
+    return index
+}
+
+function minusSkipIndex(index, skip, lowerLimit) {
+    index = index - index % skip
+    index -= skip
+    if (index < lowerLimit)
+        index = lowerLimit
+    return index
+}
+
+function plusSkipIndex(index, skip, upperLimit) {
+    index = index - index % skip
+    index += skip
+    if (index > upperLimit)
+        index = upperLimit
+    return index
+}
+
+/*Select Number Of Islands functions*/
+function minusNumberOfVertices() {
+    numberOfVertices -= 2;
+    if (numberOfVertices < 6)
+        numberOfVertices = 6
+    return numberOfVertices
+}
+
+function plusNumberOfVertices() {
+    numberOfVertices += 2
+    if (numberOfVertices > 20 && chosenOption == gameTypes['Destroying Bridges Mode'])
+        numberOfVertices = 20
+    return numberOfVertices;
+}
+
+function findDiagonalsCycles() {
+    function gcd(a,b) {
+        a = Math.abs(a);
+        b = Math.abs(b);
+        if (b > a) {var temp = a; a = b; b = temp;}
+        while (true) {
+            if (b == 0) return a;
+            a %= b;
+            if (a == 0) return b;
+            b %= a;
+        }
+    }
+    diagonalsCycles = []
+    for (let generator = 2; generator < Math.floor(numberOfVertices / 2) + 1; generator++) {
+        gcdVerticesGenerator = gcd(numberOfVertices, generator)
+        for (let rotation = 0; rotation < gcdVerticesGenerator; rotation++) {
+            cycle = {
+                'generator': generator,
+                'rotation': rotation,
+                'diagonals': [{
+                    'vertices': [rotation],
+                    'visits': 0,
+                }]
+            }
+            for (let indexInCycle = 1; indexInCycle < Math.floor(numberOfVertices / gcdVerticesGenerator); indexInCycle++) {
+                verticeInIndex = (rotation + (indexInCycle * generator)) % numberOfVertices
+                cycle.diagonals[cycle.diagonals.length - 1].vertices.push(verticeInIndex)
+                cycle.diagonals.push({
+                    'vertices' : [verticeInIndex],
+                    'visits' : 0,
+                })
+            }
+            if (cycle.diagonals.length > 2) {
+                cycle.diagonals[cycle.diagonals.length - 1].vertices.push(rotation)
+            } else {
+                cycle.diagonals.pop()
+            }
+            diagonalsCycles.push(cycle)
+        }
+    }
+}
+
+function findEntriePoints() {
+    entriePoints = []
+    lastInPlayerPath = playerPath[playerPath.length - 1]
+    diagonalsCycles.forEach((diagonalsCycle, indexDiagonalCycle) => {
+        diagonalsCycle['diagonals'].forEach((diagonal, indexDiagonal) => {
+            if (diagonalsCycle['diagonals'].length > 1) {
+                if (diagonal['vertices'][0] == lastInPlayerPath) {
+                    entriePoints.push({
+                        'indexDiagonalCycle': indexDiagonalCycle,
+                        'indexDiagonal': indexDiagonal
+                    })
+                }
+            } else {
+                if (diagonal['vertices'][0] == lastInPlayerPath || diagonal['vertices'][1] == lastInPlayerPath) {
+                    entriePoints.push({
+                        'indexDiagonalCycle': indexDiagonalCycle,
+                        'indexDiagonal': indexDiagonal
+                    })
+                }
+            }
+        })
+    })
+}
+
+function findShortestPathLenght() {
+    shortestPathLenght = ((numberOfVertices * (numberOfVertices - 3)) / 2) + ((numberOfVertices - 2) / 2) + 1
+}
+
+/*Select Island To End Path functions*/
+function findRepeatedDiagonals() {
+    function findRepeatedDiagonalsRecursive(possibleVertices) {
+        for (let newEndVertice of possibleVertices.slice(1)) {
+            newStartVertice = possibleVertices[0]
+            if (newStartVertice + 1 !== newEndVertice) {
+                buildingRepeatedDiagonals.push([newStartVertice, newEndVertice])
+                findRepeatedDiagonalsRecursive(verticesFilter(possibleVertices, newStartVertice, newEndVertice))
+                if (buildingRepeatedDiagonals.length == (numberOfVertices - 2) / 2) {
+                    repeatedDiagonals.push(buildingRepeatedDiagonals.slice())
+                }
+                buildingRepeatedDiagonals.pop()
+            }
+        }
+    }
+    function verticesFilter(vertices, startVertice, endVertice) {
+        return vertices.filter(v => {
+            if (v !== startVertice && v !== endVertice)
+                return true;
+            else
+                return false;
+        })
+    }
+    buildingRepeatedDiagonals = []
+    repeatedDiagonals = []
+    vertices = []
+    for (vertice = 0; vertice < numberOfVertices; vertice++) {
+        vertices.push(vertice)
+    }
+    findRepeatedDiagonalsRecursive(verticesFilter(vertices, 0, endVertice))
+}
+
+/*Select Bridges To Build Twice (Alpha) functions*/
+function markDestructivePaths() {
+    function VerticesInRepeatedDiagonals(vertices) {
+        sortedVertices = vertices.slice().sort((a, b) => {return a - b})
+        for (let repeatedDiagonal of repeatedDiagonals[repeatedDiagonalsSelectedIndex]) {
+            if (sortedVertices[0] == repeatedDiagonal[0] && sortedVertices[1] == repeatedDiagonal[1]) {
+                return true
+            }
+        }
+        return false
+    }
+
+    for (let diagonalsCycle of diagonalsCycles) {
+        for (let diagonal of diagonalsCycle['diagonals']) {
+            if (VerticesInRepeatedDiagonals(diagonal['vertices'])) {
+                diagonal['visits'] += 2
+            } else {
+                diagonal['visits'] += 1
+            }
+        }
+    }
+}
+
+/*Find Shortest Path functions*/
+function addToPlayerPath(entriePoint) {
+    diagonalsCyclesEntriePoint = diagonalsCycles[entriePoint['indexDiagonalCycle']] ['diagonals'] [entriePoint['indexDiagonal']]
+    lastInPlayerPath = playerPath[playerPath.length - 1]
+    
+    if (currentGameType == gameTypes['Building Bridges Mode']) {
+        diagonalsCyclesEntriePoint['visits'] += 1
+    }
+    else if (currentGameType == gameTypes['Destroying Bridges Mode']) {
+        diagonalsCyclesEntriePoint['visits'] -= 1
+    }
+
+    if (diagonalsCyclesEntriePoint['vertices'][0] == lastInPlayerPath) {
+        playerPath.push(diagonalsCyclesEntriePoint['vertices'][1])
+    } else {
+        playerPath.push(diagonalsCyclesEntriePoint['vertices'][0])
+    }
+    playerHistory.push(entriePoint)
+    findEntriePoints()
+}
+
+function deleteFromPlayerPath() {
+    entriePoint = playerHistory.pop()
+    diagonalsCyclesEntriePoint = diagonalsCycles[entriePoint['indexDiagonalCycle']] ['diagonals'] [entriePoint['indexDiagonal']]
+
+    if (currentGameType == gameTypes['Building Bridges Mode']) {
+        diagonalsCyclesEntriePoint['visits'] -= 1
+    }
+    else if (currentGameType == gameTypes['Destroying Bridges Mode']) {
+        diagonalsCyclesEntriePoint['visits'] += 1
+    }
+    playerPath.pop()
+    findEntriePoints()
+}
+
+function checkIfPathFound(functionIfNotFound) {
+    found = true
+    if (currentGameType == gameTypes['Destroying Bridges Mode']) {
+        for (diagonalsCycle of diagonalsCycles) {
+            for (diagonal of diagonalsCycle['diagonals']) {
+                if (diagonal['visits'] !== 0) {
+                    found = false
+                }
+            }
+        }
+    }
+    else if (currentGameType == gameTypes['Building Bridges Mode']) {
+        for (diagonalsCycle of diagonalsCycles) {
+            for (diagonal of diagonalsCycle['diagonals']) {
+                if (diagonal['visits'] == 0) {
+                    found = false
+                }
+            }
+        }
+    }
+    if (found) {
+        pathFoundScreen()
+    } else {
+        functionIfNotFound()
+    }
+}
+
+/*Screens*/
+function newGameScreen() {
+    currentScreen = screens['New Game'];
+    document.querySelector('#dinamic-header').innerHTML = `<h2>${currentScreen}</h2>`
+    let html = '<p>'
+    newGameOptions.forEach((option, index) => {
+        if (index == newGameSelectedIndex) {
+            html = `${html}${option} &#8645 &#8617<br>`
+        } else {
+            html = `${html}${option}<br>`
+        }
+    })
+    document.querySelector('#dinamic-content').innerHTML = html + '</p>';
+}
+
+function selectBiggestIslandScreen() {
+    currentScreen = screens['Select Number Of Islands'];
+    document.querySelector('#dinamic-header').innerHTML = `<h2>${currentScreen}</h2>`
+    document.querySelector('#dinamic-content').innerHTML = `<p>${numberOfVertices} &#8645 &#8617</p>`;
+}
+
+function selectEndOfPathIslandScreen() {
+    currentScreen = screens['Select Island To End Path'];
+    document.querySelector('#dinamic-header').innerHTML = `<h2>${currentScreen}</h2>`
+    document.querySelector('#dinamic-content').innerHTML = `<p>${endVertice} &#8645 &#8617</p>`;
+}
+
+function selectBridgesToBuildScreen() {
+    currentScreen = screens['Select Bridges To Build Twice (Alpha)'];
+    document.querySelector('#dinamic-header').innerHTML = `<h2>${currentScreen}</h2>`
+    let html = ''
+    if (repeatedDiagonals.length - repeatedDiagonalsSelectedIndex < repeatedDiagonals.length % skip){
+        firstSlice = repeatedDiagonals.length - repeatedDiagonals.length % skip
+        repeatedDiagonalsToScreen = repeatedDiagonals.slice(firstSlice)
+    } else {
+        firstSlice = repeatedDiagonalsSelectedIndex
+        repeatedDiagonalsToScreen = repeatedDiagonals.slice(firstSlice, repeatedDiagonalsSelectedIndex + skip)
+    }
+    html = `${html}<p>page ${Math.floor(repeatedDiagonalsSelectedIndex / skip) + 1} of ${Math.floor(repeatedDiagonals.length / skip) + 1} &#8646</p><p>`
+    repeatedDiagonalsToScreen.forEach((diagonals, index) => {
+        formattedDiagonals = '| '
+        diagonals.forEach((diagonal) => {
+            formattedDiagonals = `${formattedDiagonals}${diagonal[0]}__${diagonal[1]} | `
+        })
+        if (index + firstSlice == repeatedDiagonalsSelectedIndex) {
+            html = `${html}${formattedDiagonals} &#8645 &#8617<br>`
+        } else {
+            html = `${html}${formattedDiagonals}<br>`
+        }
+    })
+    document.querySelector('#dinamic-content').innerHTML = html + '</p>';
+}
+
+function findShortestPathScreen() {
+    currentScreen = screens['Find Shortest Path'];
+    document.querySelector('#dinamic-header').innerHTML = `<h2>${currentScreen}</h2>${playerPathFormatted()}`
+    document.querySelector('#dinamic-content').innerHTML = DiagonalsCyclesFormatted();
+    focused()
+}
+
+function pathFoundScreen() {
+    currentScreen = screens['Path Found'];
+    currentGameType = ''
+    smile = `&#${Math.floor(Math.random() * (128567 - 128512) ) + 128512}` //random selection of smiles in html escape code
+    document.querySelector('#dinamic-header').innerHTML = `<h2 id="path-found-title">${smile} ${currentScreen} ${smile}</h2>${playerPathFormatted()}`
+    document.querySelector('#dinamic-content').innerHTML = DiagonalsCyclesFormatted();
+    focused()
+}
+
+function playerPathFormatted() {
+    let html = 'Path: '
+    for (let vertice of playerPath) {
+        html = `${html}${vertice}.`
+    }
+    html = `${html} &#10232`
+    if (currentGameType == gameTypes['Destroying Bridges Mode']) {
+        html = `${html}<br>Path End: ${endVertice}`
+    }
+    html = `${html}<br>
+        Path Length: ${playerPath.length}<br>
+        Shortest Length Possible: ${shortestPathLenght}<br>
+        Number of Islands: ${numberOfVertices}`
+    return `<p>${html}</p>`
+}
+
+function DiagonalsCyclesFormatted() {
+    html = ''
+    lastInPlayerPath = playerPath[playerPath.length - 1]
+    entriePoint = entriePoints[entriePointsSelectedIndex]
+    diagonalsCycles.forEach((diagonalsCycle, indexDiagonalsCycle) => {
+        cycle = ''
+        for (let diagonal of diagonalsCycle['diagonals']) {
+            vertice = diagonal['vertices'][0]
+            if (vertice == lastInPlayerPath) {
+                vertice = `_<span class="entrie-point">${vertice}</span>_`
+            } else {
+                vertice = `_${vertice}_`
+            }
+            visits = diagonal['visits']
+            console.log(visits)
+            if (visits == 0) {
+                cycle = cycle + vertice + `<span class="visits visits-0">${visits}</span>`
+            }
+            else if (visits == 1) {
+                cycle = cycle + vertice + `<span class="visits visits-1">${visits}</span>`
+            }
+            else if (visits == 2) {
+                cycle = cycle + vertice + `<span class="visits visits-2">${visits}</span>`
+            } else {
+                cycle = cycle + vertice + `<span class="visits">${visits}</span>`
+            }
+        }
+        vertice = diagonalsCycle['diagonals'][diagonalsCycle['diagonals'].length - 1]['vertices'][1]  
+        if (vertice == lastInPlayerPath)
+            vertice = `_<span class="entrie-point">${vertice}</span>_`
+        else
+            vertice = `_${vertice}_`
+            cycle = cycle + vertice
+        if (indexDiagonalsCycle == entriePoint['indexDiagonalCycle']) {
+            cycle = `<span class="focused-indicator">&#8645 &#8646</span><span id="focused">${cycle}</span><span class="focused-indicator">&#8645 &#8646</span>`
+        }
+        html = `${html}<p>${cycle}</p>`
+    })
+    return html
+}
+
+function focused() {
+    headerHeight = document.getElementById('header').getBoundingClientRect().height;
+    focusedTop = document.getElementById('focused').getBoundingClientRect().top + window.pageYOffset;
+    console.log(focusedTop, headerHeight, (window.innerHeight + headerHeight) / 2)
+    window.scroll({
+	top: focusedTop - ((window.innerHeight - headerHeight) / 2) - headerHeight,
+	behavior: "smooth"
+    });
+}
+
+
+function tutorialScreen() {
+    currentScreen = screens['Tutorial']
+    document.querySelector('#dinamic-header').innerHTML = `<h2>${currentScreen}</h2>`
+    document.querySelector('#dinamic-content').innerHTML = `
+    <p>
+        This is <a href="https://en.wikipedia.org/wiki/Leonhard_Euler">Euler</a>. 
+        He found <a href="https://en.wikipedia.org/wiki/Seven_Bridges_of_K%C3%B6nigsberg">this path</a> <br>
+        He really liked paths. Let's give Euler some love<br>
+        
+        This game is about <a href="https://en.wikipedia.org/wiki/Eulerian_path">eulerian paths</a> in even convex polygons diagonals
+    </p>
+    <p>
+        This is a bridge: <br>
+        __<br>
+        This is how many times you crossed the bridge: <br>
+        _<span class="visits">0</span>_ <br>
+        This are islands connected by a bridge: <br>
+        _0_<span class="visits">0</span>_2_ <br>
+        This is your path and in bold is from where you can go next: <br>
+        Path: 0. <br>
+        _<span class="entrie-point">0</span>_<span class="visits">0</span>_2_ <br>
+        The bridge was crossed one time and your path was updated:<br>
+        Path: 0.2 <br>
+        _0_<span class="visits">1</span>_<span class="entrie-point">2</span>_ <br>
+        There are cycles/paths of islands connected by bridges: <br>
+        Path: 0.2 <br>
+        _0_<span class="visits">1</span>_<span class="entrie-point">2</span>_<span class="visits">0</span>_4_<span class="visits">0</span>_0_ <br>
+        _<span class="entrie-point">2</span>_<span class="visits">0</span>_5_
+    </p>
+    <p>
+        <span class="bold">You have to find the shortest path that cross every bridge</span> <br>
+        You can move &#8645  beetwen cycles/paths with islands from where you can go next <br>
+        You can move &#8646 in valid cycles/paths to build your path <br>
+        You can delete &#10232 the last island in your path
+    </p>
+    <p>
+        <span class="bold">${gameTypes['Building Bridges Mode']}</span><br>
+        ${screens['Select Number Of Islands']}<br>
+        ${screens['Find Shortest Path']}<br>
+        Win when all bridges are at least 1
+    </p>
+    <p>
+        <span class="bold">${gameTypes['Destroying Bridges Mode']}</span><br>
+        ${screens['Select Number Of Islands']}<br>
+        ${screens['Select Island To End Path']}<br>
+        ${screens['Select Bridges To Build Twice (Alpha)']}<br>
+        ${screens['Find Shortest Path']}<br>
+        Win when all bridges are 0
+    </p>
+    `
+}
+
+/*set inicial screen and event listener*/
+tutorialScreen()
+document.addEventListener('keydown', (event) => {
+    if (event.code == "Escape") {
+        newGameScreen()
+    } else {
+        screensInputsFunctions[currentScreen][event.code]()
+    }
+}, false);
+
+</script>
+
+    </body>
+</html>

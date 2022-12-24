@@ -1,2 +1,7 @@
-# Love4Euler
- Love2d game inpired by euler paths on diagonals of even convex polygons
+# S24E
+#### Video Demo:  <>
+#### Description: A mathematical game about eulerian paths in even convex polygons diagonals
+
+
+
+
