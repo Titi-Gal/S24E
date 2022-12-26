@@ -49,7 +49,7 @@
                 font-weight: bold;
                 text-decoration: overline;
             }
-            .constrols-indicator {
+            .controls-indicator {
                 color: mediumseagreen;
                 font-weight: bold;
                 display: inline;
@@ -62,7 +62,7 @@
     </head>
     <body>
         <div id="header">
-            <span id="esc-reminder"><span class="constrols-indicator">Esc</span> for new game</span>   
+            <span id="esc-reminder"><span class="controls-indicator">Esc</span> for new game</span>   
             <h1>S24E</h1>
             <div id="dinamic-header">    
             </div>
@@ -496,7 +496,7 @@ function newGameScreen() {
     let html = '<p>'
     newGameOptions.forEach((option, index) => {
         if (index == newGameSelectedIndex) {
-            html = `${html}${option} <span class="constrols-indicator">&#8645 &#8617</span><br>`
+            html = `${html}${option} <span class="controls-indicator">&#8645 &#8617</span><br>`
         } else {
             html = `${html}${option}<br>`
         }
@@ -507,13 +507,13 @@ function newGameScreen() {
 function selectBiggestIslandScreen() {
     currentScreen = screens['Select Number Of Islands'];
     document.querySelector('#dinamic-header').innerHTML = `<h2>${currentScreen}</h2>`
-    document.querySelector('#dinamic-content').innerHTML = `<p>${numberOfVertices} <span class="constrols-indicator">&#8645 &#8617</span></p>`;
+    document.querySelector('#dinamic-content').innerHTML = `<p>${numberOfVertices} <span class="controls-indicator">&#8645 &#8617</span></p>`;
 }
 
 function selectEndOfPathIslandScreen() {
     currentScreen = screens['Select Island To End Path'];
     document.querySelector('#dinamic-header').innerHTML = `<h2>${currentScreen}</h2>`
-    document.querySelector('#dinamic-content').innerHTML = `<p>${endVertice} <span class="constrols-indicator">&#8645 &#8617</span></p>`;
+    document.querySelector('#dinamic-content').innerHTML = `<p>${endVertice} <span class="controls-indicator">&#8645 &#8617</span></p>`;
 }
 
 function selectBridgesToBuildScreen() {
@@ -527,14 +527,14 @@ function selectBridgesToBuildScreen() {
         firstSlice = repeatedDiagonalsSelectedIndex
         repeatedDiagonalsToScreen = repeatedDiagonals.slice(firstSlice, repeatedDiagonalsSelectedIndex + skip)
     }
-    html = `${html}<p>page ${Math.floor(repeatedDiagonalsSelectedIndex / skip) + 1} of ${Math.floor(repeatedDiagonals.length / skip) + 1} <span class="constrols-indicator">&#8646</span></p><p>`
+    html = `${html}<p>page ${Math.floor(repeatedDiagonalsSelectedIndex / skip) + 1} of ${Math.floor(repeatedDiagonals.length / skip) + 1} <span class="controls-indicator">&#8646</span></p><p>`
     repeatedDiagonalsToScreen.forEach((diagonals, index) => {
         formattedDiagonals = '| '
         diagonals.forEach((diagonal) => {
             formattedDiagonals = `${formattedDiagonals}${diagonal[0]}__${diagonal[1]} | `
         })
         if (index + firstSlice == repeatedDiagonalsSelectedIndex) {
-            html = `${html}${formattedDiagonals} <span class="constrols-indicator">&#8645 &#8617</span><br>`
+            html = `${html}${formattedDiagonals}<span class="controls-indicator"> &#8645 &#8617</span><br>`
         } else {
             html = `${html}${formattedDiagonals}<br>`
         }
@@ -561,7 +561,7 @@ function pathFoundScreen() {
 
 function playerPathFormatted(pathLengthToPrint=90) {
 
-    let html = '<span class="constrols-indicator">P</span>ath: ';
+    let html = '<span class="controls-indicator">P</span>ath: ';
     firstSlice = 0;
     if (pathShortPrint && playerPath.length > pathLengthToPrint) {
         html = html + '... '
@@ -571,7 +571,7 @@ function playerPathFormatted(pathLengthToPrint=90) {
     for (let vertice of playerPath.slice(firstSlice)) {
             html = `${html}${vertice}.`
         }
-    html = `${html} <span class="constrols-indicator">&#10232</span>`
+    html = `${html}<span class="controls-indicator"> &#10232</span>`
     if (currentGameType == gameTypes['Destroying Bridges Mode']) {
         html = `${html}<br>Path End: ${endVertice}`
     }
@@ -615,7 +615,7 @@ function DiagonalsCyclesFormatted() {
             vertice = `_${vertice}_`
             cycle = cycle + vertice
         if (indexDiagonalsCycle == entriePoint['indexDiagonalCycle']) {
-            cycle = `<span class="constrols-indicator">&#8645 &#8646</span><span id="focused">${cycle}</span><span class="constrols-indicator">&#8645 &#8646</span>`
+            cycle = `<span class="controls-indicator">&#8645 &#8646</span> <span id="focused">${cycle}</span> <span class="controls-indicator">&#8645 &#8646</span>`
         }
         html = `${html}<p>${cycle}</p>`
     })
@@ -646,31 +646,34 @@ function tutorialScreen() {
         This is a bridge: <br>
         __<br>
         This is how many times you crossed the bridge: <br>
-        _<span class="visits">0</span>_ <br>
+        _<span class="visits visits-0">0</span>_ <br>
         This are islands connected by a bridge: <br>
-        _0_<span class="visits">0</span>_2_ <br>
-        This is your path and in bold is from where you can go next: <br>
-        Path: 0. <br>
-        _<span class="entrie-point">0</span>_<span class="visits">0</span>_2_ <br>
+        _0_<span class="visits visits-0">0</span>_2_ <br>
+        This is your path and in bold are the islands from where you can go next: <br>
+        Path: 0. <span class="controls-indicator">&#10232</span><br>
+        _<span class="entrie-point">0</span>_<span class="visits visits-0">0</span>_2_ <br>
         The bridge was crossed one time and your path was updated:<br>
-        Path: 0.2 <br>
-        _0_<span class="visits">1</span>_<span class="entrie-point">2</span>_ <br>
-        There are cycles/paths of islands connected by bridges: <br>
-        Path: 0.2 <br>
-        _0_<span class="visits">1</span>_<span class="entrie-point">2</span>_<span class="visits">0</span>_4_<span class="visits">0</span>_0_ <br>
-        _<span class="entrie-point">2</span>_<span class="visits">0</span>_5_
+        Path: 0.2 <span class="controls-indicator">&#10232</span><br>
+        _0_<span class="visits visits-1">1</span>_<span class="entrie-point">2</span>_ <br>
+        There are paths of islands connected by bridges: <br>
+        Path: 0.2 <span class="controls-indicator">&#10232</span><br>
+        _0_<span class="visits visits-1">1</span>_<span class="entrie-point">2</span>_<span class="visits visits-0">0</span>_4_<span class="visits visits-0">0</span>_0_<br>
+        _1_<span class="visits visits-0">0</span>_3_<span class="visits visits-0">0</span>_5_<span class="visits visits-0">0</span>_1_<br>
+        <span class="controls-indicator">&#8645 &#8646</span> _<span class="entrie-point">2</span>_<span class="visits visits-0">0</span>_5_ <span class="controls-indicator">&#8645 &#8646</span>
     </p>
     <p>
-        <span class="bold">You have to find the shortest path that cross every bridge</span> <br>
-        You can move &#8645  beetwen cycles/paths with islands from where you can go next <br>
-        You can move &#8646 in valid cycles/paths to build your path <br>
-        You can delete &#10232 the last island in your path
+        <span class="bold">You have to find shortest paths that cross every bridge</span><br>
+        You can <span class="controls-indicator">&#8645</span> move beetwen paths with islands from where you can go next<br>
+        You can <span class="controls-indicator">&#8646</span> move  in selected paths to build your path<br>
+        You can <span class="controls-indicator">&#10232</span> delete the last island in your path<br>
+        You can <span class="controls-indicator">P</span> show and hide your full path<br>
+        You can <span class="controls-indicator">Esc</span> go to menu<br>
     </p>
     <p>
         <span class="bold">${gameTypes['Building Bridges Mode']}</span><br>
         ${screens['Select Number Of Islands']}<br>
         ${screens['Find Shortest Path']}<br>
-        Win when all bridges are at least 1
+        Win when all bridges are at least <span class="visits-1">1</span>
     </p>
     <p>
         <span class="bold">${gameTypes['Destroying Bridges Mode']}</span><br>
@@ -678,7 +681,7 @@ function tutorialScreen() {
         ${screens['Select Island To End Path']}<br>
         ${screens['Select Bridges To Build Twice (Alpha)']}<br>
         ${screens['Find Shortest Path']}<br>
-        Win when all bridges are 0
+        Win when all bridges are <span class="visits-0">0</span>
     </p>
     `
 }
